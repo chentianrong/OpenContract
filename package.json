@@ -4,7 +4,7 @@
   "description": "Markdown-first contract system and CLI for agent-driven work",
   "type": "module",
   "bin": {
-    "opencontract": "./dist/cli/index.js"
+    "opencontract": "dist/cli/index.js"
   },
   "exports": {
     ".": {
@@ -38,11 +38,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/opencontract/opencontract.git"
+    "url": "git+https://github.com/chentianrong/OpenContract.git"
   },
-  "homepage": "https://github.com/opencontract/opencontract#readme",
+  "homepage": "https://github.com/chentianrong/OpenContract#readme",
   "bugs": {
-    "url": "https://github.com/opencontract/opencontract/issues"
+    "url": "https://github.com/chentianrong/OpenContract/issues"
   },
   "author": "",
   "license": "MIT",
