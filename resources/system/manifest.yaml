@@ -1,0 +1,88 @@
+# OpenContract system manifest
+# This file is managed by 'opencontract update'
+
+version: "1.0.0"
+installedAt: "2026-01-31T12:00:00Z"
+actions:
+  - name: opencontract
+    version: v1.0.0
+    packagePath: actions/opencontract
+  - name: explore
+    version: v1.0.0
+    packagePath: actions/explore
+  - name: clarify
+    version: v1.0.0
+    packagePath: actions/clarify
+  - name: decompose
+    version: v1.0.0
+    packagePath: actions/decompose
+  - name: suggest
+    version: v1.0.0
+    packagePath: actions/suggest
+  - name: build
+    version: v1.0.0
+    packagePath: actions/build
+  - name: plan
+    version: v1.0.0
+    packagePath: actions/plan
+  - name: execute
+    version: v1.0.0
+    packagePath: actions/execute
+  - name: debug
+    version: v1.0.0
+    packagePath: actions/debug
+  - name: review
+    version: v1.0.0
+    packagePath: actions/review
+  - name: verify
+    version: v1.0.0
+    packagePath: actions/verify
+  - name: report
+    version: v1.0.0
+    packagePath: actions/report
+  - name: archive
+    version: v1.0.0
+    packagePath: actions/archive
+contracts:
+  - name: note
+    version: v1.0.0
+    packagePath: contracts/note
+  - name: decision
+    version: v1.0.0
+    packagePath: contracts/decision
+  - name: decomposition
+    version: v1.0.0
+    packagePath: contracts/decomposition
+  - name: suggestion
+    version: v1.0.0
+    packagePath: contracts/suggestion
+  - name: proposal
+    version: v1.0.0
+    packagePath: contracts/proposal
+  - name: specification
+    version: v1.0.0
+    packagePath: contracts/specification
+  - name: design
+    version: v1.0.0
+    packagePath: contracts/design
+  - name: tasks
+    version: v1.0.0
+    packagePath: contracts/tasks
+  - name: execution-report
+    version: v1.0.0
+    packagePath: contracts/execution-report
+  - name: debug-report
+    version: v1.0.0
+    packagePath: contracts/debug-report
+  - name: review-report
+    version: v1.0.0
+    packagePath: contracts/review-report
+  - name: verification-report
+    version: v1.0.0
+    packagePath: contracts/verification-report
+  - name: report
+    version: v1.0.0
+    packagePath: contracts/report
+  - name: archive-report
+    version: v1.0.0
+    packagePath: contracts/archive-report
