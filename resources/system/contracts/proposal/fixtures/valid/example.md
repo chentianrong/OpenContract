@@ -9,12 +9,15 @@ inputs: []
 
 ## Why
 
-Content under Why.
+Contract rules currently accept documents whose required sections are technically
+present but empty, so validation passes on artifacts that carry no usable content.
 
 ## What Changes
 
-Content under What Changes.
+Raise the per-section minimum content thresholds and add the sections that reports
+already rely on in practice. Out of scope: changing the validation engine itself.
 
 ## Impact
 
-Content under Impact.
+Artifacts that previously passed with placeholder sections will now fail with a
+SECTION_EMPTY error naming the section and the required length.

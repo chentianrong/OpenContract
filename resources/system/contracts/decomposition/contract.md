@@ -13,7 +13,12 @@ rules:
     - name: Parts
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 30
+      maxOccurrences: 1
+    - name: Dependencies
+      level: 2
+      required: false
+      minimumContent: 10
 ---
 
 # Decomposition Contract

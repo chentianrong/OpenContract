@@ -116,7 +116,7 @@ describe('Doctor checks', () => {
   }
 
   it('reports a healthy workspace after init plus update', () => {
-    initWorkspace(workspace, { harnesses: ['claude'] });
+    initWorkspace(workspace, { harnesses: ['claude'], localSystem: true });
     const discovered = requireWorkspace(workspace);
     updateSystem(resolvePaths(discovered), discovered.config);
 
@@ -126,14 +126,14 @@ describe('Doctor checks', () => {
   });
 
   it('reports a missing system tree', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     rmSync(join(workspace, '.opencontract', 'system'), { recursive: true, force: true });
 
     expect(failingComponents()).toContain('system-root');
   });
 
   it('reports a missing manifest', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     cpSync(bundledSystemRoot(), join(workspace, '.opencontract', 'system'), { recursive: true });
     rmSync(join(workspace, '.opencontract', 'system', 'manifest.yaml'), { force: true });
 
@@ -141,7 +141,7 @@ describe('Doctor checks', () => {
   });
 
   it('reports a manifest entry whose package is not installed', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     cpSync(bundledSystemRoot(), join(workspace, '.opencontract', 'system'), { recursive: true });
     rmSync(join(workspace, '.opencontract', 'system', 'contracts', 'tasks'), {
       recursive: true,
@@ -155,7 +155,7 @@ describe('Doctor checks', () => {
   });
 
   it('reports a malformed manifest as invalid rather than crashing', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     cpSync(bundledSystemRoot(), join(workspace, '.opencontract', 'system'), { recursive: true });
     writeFileSync(
       join(workspace, '.opencontract', 'system', 'manifest.yaml'),
@@ -167,7 +167,7 @@ describe('Doctor checks', () => {
   });
 
   it('reports a missing adapter for a selected harness', () => {
-    initWorkspace(workspace, { harnesses: ['claude'] });
+    initWorkspace(workspace, { harnesses: ['claude'], localSystem: true });
     cpSync(bundledSystemRoot(), join(workspace, '.opencontract', 'system'), { recursive: true });
 
     const result = doctor();
@@ -177,7 +177,7 @@ describe('Doctor checks', () => {
   });
 
   it('reports an unmarked adapter file as an ownership conflict', () => {
-    initWorkspace(workspace, { harnesses: ['claude'] });
+    initWorkspace(workspace, { harnesses: ['claude'], localSystem: true });
     cpSync(bundledSystemRoot(), join(workspace, '.opencontract', 'system'), { recursive: true });
     const target = join(workspace, '.claude', 'skills', 'opencontract', 'SKILL.md');
     mkdirSync(join(target, '..'), { recursive: true });
@@ -189,7 +189,7 @@ describe('Doctor checks', () => {
   });
 
   it('reports a stray file in the cache directory', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     cpSync(bundledSystemRoot(), join(workspace, '.opencontract', 'system'), { recursive: true });
     writeFileSync(join(workspace, '.opencontract', 'cache', 'stray.txt'), '', 'utf-8');
 
@@ -197,7 +197,7 @@ describe('Doctor checks', () => {
   });
 
   it('treats absent trusted validator roots as an explained pass', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     cpSync(bundledSystemRoot(), join(workspace, '.opencontract', 'system'), { recursive: true });
     // Rewrite the config with no trusted roots.
     writeFileSync(
@@ -218,7 +218,7 @@ describe('System update', () => {
 
   beforeEach(() => {
     workspace = mkdtempSync(join(tmpdir(), 'opencontract-update-'));
-    initWorkspace(workspace, { harnesses: ['claude'] });
+    initWorkspace(workspace, { harnesses: ['claude'], localSystem: true });
   });
 
   afterEach(() => {

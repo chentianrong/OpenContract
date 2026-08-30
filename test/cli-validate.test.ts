@@ -42,7 +42,7 @@ describe('CLI: validate', () => {
 
   beforeEach(() => {
     workspace = mkdtempSync(join(tmpdir(), 'opencontract-validate-'));
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     cpSync(bundledSystemRoot(), join(workspace, '.opencontract', 'system'), { recursive: true });
     runDir = join(workspace, RUN_RELATIVE);
     mkdirSync(runDir, { recursive: true });

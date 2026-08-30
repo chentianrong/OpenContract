@@ -49,7 +49,7 @@ describe('Library entry point', () => {
   });
 
   it('exposes the workspace lifecycle', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
 
     const discovered = requireWorkspace(workspace);
     expect(discovered.root).toBe(workspace);
@@ -60,7 +60,7 @@ describe('Library entry point', () => {
   });
 
   it('installs the system and reports health without the CLI', () => {
-    initWorkspace(workspace, { harnesses: ['claude'] });
+    initWorkspace(workspace, { harnesses: ['claude'], localSystem: true });
     const discovered = requireWorkspace(workspace);
     const paths = resolvePaths(discovered);
 
@@ -73,7 +73,7 @@ describe('Library entry point', () => {
   });
 
   it('inspects definitions through the query service', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     const discovered = requireWorkspace(workspace);
     const paths = resolvePaths(discovered);
     updateSystem(paths, discovered.config);
@@ -92,7 +92,7 @@ describe('Library entry point', () => {
   });
 
   it('validates an Artifact and an ActionRun', async () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     const discovered = requireWorkspace(workspace);
     const paths = resolvePaths(discovered);
     updateSystem(paths, discovered.config);
@@ -176,7 +176,7 @@ Text.
   });
 
   it('exposes Contract fixture testing', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     const discovered = requireWorkspace(workspace);
     const paths = resolvePaths(discovered);
     updateSystem(paths, discovered.config);
@@ -218,7 +218,7 @@ Text.
   });
 
   it('exposes archive planning', () => {
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     const discovered = requireWorkspace(workspace);
     const paths = resolvePaths(discovered);
 

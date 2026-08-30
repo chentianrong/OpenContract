@@ -13,15 +13,18 @@ rules:
     - name: Why
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 10
+      maxOccurrences: 1
     - name: What Changes
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 15
+      maxOccurrences: 1
     - name: Impact
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 10
+      maxOccurrences: 1
 ---
 
 # Proposal Contract

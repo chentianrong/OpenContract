@@ -94,6 +94,18 @@ export const ERROR_CATALOG: Record<string, ErrorDefinition> = Object.fromEntries
       'Remove the symlink or point it inside the workspace root.',
     ),
     def(
+      'PATH_OUTSIDE_HOME',
+      'configuration',
+      'An absolute system path resolves outside the user home directory.',
+      'Point the system path at a location under your home directory, such as ~/.opencontract/system.',
+    ),
+    def(
+      'GLOBAL_SYSTEM_NOT_INSTALLED',
+      'configuration',
+      'The global OpenContract system is not installed.',
+      'Run "opencontract install" to install the global system at ~/.opencontract/.',
+    ),
+    def(
       'PATH_NOT_FOUND',
       'configuration',
       'The referenced path does not exist.',

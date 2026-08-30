@@ -8,16 +8,25 @@ template: template.md
 rules:
   frontmatterSchema:
     type: object
-    required: [contract, version, action, action_version, created_at, inputs]
+    required: [contract, version, action, action_version, created_at, inputs, status]
+    properties:
+      status:
+        enum: [completed, abandoned]
   sections:
-    - name: Updates
+    - name: Status
       level: 2
       required: true
-      minimumContent: 1
-    - name: Destination
+      minimumContent: 10
+      maxOccurrences: 1
+    - name: Outcome
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 15
+      maxOccurrences: 1
+    - name: Follow-ups
+      level: 2
+      required: false
+      minimumContent: 10
 ---
 
 # Archive Report Contract

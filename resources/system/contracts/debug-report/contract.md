@@ -13,15 +13,23 @@ rules:
     - name: Symptom
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 10
+      maxOccurrences: 1
+    - name: Reproduction
+      level: 2
+      required: true
+      minimumContent: 10
+      maxOccurrences: 1
     - name: Root Cause
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 15
+      maxOccurrences: 1
     - name: Fix
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 10
+      maxOccurrences: 1
 ---
 
 # Debug Report Contract

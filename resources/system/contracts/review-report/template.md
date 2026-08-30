@@ -8,3 +8,7 @@ inputs: []
 ---
 
 ## Findings
+
+<!-- Anchor each finding to a file location:
+**path/to/file.ext:42** — Description of what goes wrong at this location.
+-->

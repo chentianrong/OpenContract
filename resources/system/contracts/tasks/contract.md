@@ -13,7 +13,11 @@ rules:
     - name: Tasks
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 20
+      maxOccurrences: 1
+validator:
+  runtime: python
+  entrypoint: validator.py
 ---
 
 # Tasks Contract
@@ -24,6 +28,16 @@ This Contract validates the `tasks` Artifact type at v1.0.0.
 
 Frontmatter must include the artifact-core metadata fields. The body must contain the declared sections.
 
-## Usage
+## Format
 
-Agents produce Artifacts of this type when the an ordered, verifiable task list..
+The Tasks section must be a checkbox list so completion can be tracked:
+
+```markdown
+## Tasks
+
+- [ ] Add validation pipeline for new Contract
+- [ ] Update fixtures to match new rules
+- [ ] Run full test suite and verify conformance
+```
+
+Each task opens with `- [ ]` (unchecked) or `- [x]` (checked). The validator rejects prose paragraphs under the Tasks heading because they cannot be marked complete.

@@ -11,3 +11,7 @@ inputs: []
 
 
 ## Results
+
+<!-- Write each scenario result with an outcome:
+**Scenario: <name>** — PASSED / FAILED / unverifiable / no test coverage
+-->

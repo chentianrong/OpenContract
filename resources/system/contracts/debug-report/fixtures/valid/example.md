@@ -9,12 +9,20 @@ inputs: []
 
 ## Symptom
 
-Content under Symptom.
+Fixture conformance test fails with "template: artifact-core field 'status' missing"
+for decision and archive-report Contracts.
+
+## Reproduction
+
+Run `pnpm test:run test/contract-fixtures.test.ts` after adding `status` to the
+frontmatter schema but before updating the template.
 
 ## Root Cause
 
-Content under Root Cause.
+The template validator checks that every required frontmatter field appears in
+template.md. The schema was updated but the template was not.
 
 ## Fix
 
-Content under Fix.
+Added `status: pending` to decision/template.md and `status: completed` to
+archive-report/template.md.

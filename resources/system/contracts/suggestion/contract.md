@@ -13,11 +13,13 @@ rules:
     - name: Options
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 30
+      maxOccurrences: 1
     - name: Recommendation
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 10
+      maxOccurrences: 1
 ---
 
 # Suggestion Contract

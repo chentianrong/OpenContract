@@ -8,20 +8,26 @@ template: template.md
 rules:
   frontmatterSchema:
     type: object
-    required: [contract, version, action, action_version, created_at, inputs]
+    required: [contract, version, action, action_version, created_at, inputs, status]
+    properties:
+      status:
+        enum: [pending, approved, rejected]
   sections:
     - name: Question
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 10
+      maxOccurrences: 1
     - name: Options
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 20
+      maxOccurrences: 1
     - name: Recommendation
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 10
+      maxOccurrences: 1
 ---
 
 # Decision Contract

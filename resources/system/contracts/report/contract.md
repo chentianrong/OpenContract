@@ -13,7 +13,20 @@ rules:
     - name: Summary
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 20
+      maxOccurrences: 1
+    - name: Outcomes
+      level: 2
+      required: false
+      minimumContent: 10
+    - name: Decisions
+      level: 2
+      required: false
+      minimumContent: 10
+    - name: Learnings
+      level: 2
+      required: false
+      minimumContent: 10
 ---
 
 # Report Contract

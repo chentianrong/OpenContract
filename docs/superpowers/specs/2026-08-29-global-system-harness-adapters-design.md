@@ -243,41 +243,146 @@ outputs:
 #### New: `opencontract install` (global installation)
 
 ```bash
-opencontract install [--force]
+opencontract install [--force] [--non-interactive] [--harness <names>]
 ```
 
+**Interactive mode (default):**
+
+Walks the user through installation steps with prompts:
+
+1. **Welcome screen**
+   ```
+   OpenContract Global Installation
+   
+   This will install system Actions and Contracts to ~/.opencontract/
+   and can be shared across all your projects.
+   
+   Press Enter to continue, or Ctrl+C to cancel.
+   ```
+
+2. **Harness selection**
+   ```
+   Which harnesses do you use? (Space to select, Enter to confirm)
+   
+   [x] Claude (.claude/commands/, .claude/skills/)
+   [ ] Cursor (.cursor/commands/, .cursor/skills/)
+   [ ] Codex (.codex/commands/, .codex/skills/)
+   ```
+   
+   Detects existing harness directories in `~/` and pre-checks them.
+   User can toggle with space, confirm with Enter.
+
+3. **Installation progress**
+   ```
+   ✓ Created ~/.opencontract/system
+   ✓ Installed 13 Actions
+   ✓ Installed 14 Contracts
+   ✓ Generated 13 slash commands at ~/.claude/commands/oc/
+   ✓ Generated 13 skills at ~/.claude/skills/oc-*/
+   
+   Installation complete! Run 'opencontract init' in a project to get started.
+   ```
+
+**Non-interactive mode:**
+
+```bash
+# Use flags for CI/automation
+opencontract install --non-interactive --harness claude,cursor
+```
+
+When `--non-interactive` is set:
+- No prompts shown
+- `--harness` is required (comma-separated list)
+- Fails if `~/.opencontract/` already exists (unless `--force`)
+
+**Flags:**
+- `--force` — Reinstall even if `~/.opencontract/` exists; overwrites system tree and regenerates adapters
+- `--non-interactive` — Skip prompts; requires `--harness`
+- `--harness <names>` — Comma-separated harness names (e.g., `claude,cursor`). In interactive mode, pre-selects these; in non-interactive mode, required.
+
 **Behavior:**
-1. Create `~/.opencontract/system/` and `~/.opencontract/cache/`
-2. Copy bundled system Actions and Contracts to `~/.opencontract/system/`
-3. Write `manifest.yaml` with version and timestamps
-4. Generate user-level harness adapters to `~/.claude/`, `~/.cursor/`, etc.
+1. Check if `~/.opencontract/system/manifest.yaml` exists
+   - If yes and not `--force`: exit with message "Already installed. Use --force to reinstall."
+2. In interactive mode: show prompts and collect user input
+3. Create `~/.opencontract/system/` and `~/.opencontract/cache/`
+4. Copy bundled system Actions and Contracts to `~/.opencontract/system/`
+5. Write `manifest.yaml` with version and timestamps
+6. For each selected harness: generate user-level adapters to `~/.claude/`, `~/.cursor/`, etc.
+7. Save selected harnesses to `~/.opencontract/config.yaml`
 
 **Exit codes:**
 - `0` — Installation succeeded
-- `1` — Already installed (use `--force` to reinstall)
-- `2` — Installation failed
+- `1` — Already installed (use `--force` to reinstall) OR user cancelled during prompts
+- `2` — Installation failed (validation error, permission error, etc.)
 
 #### Modified: `opencontract init`
 
 ```bash
-opencontract init [--harness claude,cursor]
+opencontract init [--harness <names>] [--non-interactive]
 ```
 
+**Interactive mode (default):**
+
+If `~/.opencontract/` doesn't exist, prompts user to run `opencontract install` first:
+```
+Global system not found. Would you like to install it now? (Y/n)
+```
+
+Then walks through project setup:
+
+1. **Harness selection**
+   ```
+   Which harnesses does this project use? (Space to select, Enter to confirm)
+   
+   [x] Claude (.claude/commands/, .claude/skills/)
+   [ ] Cursor (.cursor/commands/, .cursor/skills/)
+   [ ] Codex (.codex/commands/, .codex/skills/)
+   ```
+   
+   Pre-checks harnesses that are already installed globally (from `~/.opencontract/config.yaml`).
+   User can override to install a subset for this project.
+
+2. **Project setup progress**
+   ```
+   ✓ Created .opencontract/config.yaml
+   ✓ Created project directories
+   ✓ Generated 13 slash commands at .claude/commands/oc/
+   ✓ Generated 13 skills at .claude/skills/oc-*/
+   
+   Project initialized! Try /oc:explore or /oc:build to get started.
+   ```
+
+**Non-interactive mode:**
+
+```bash
+opencontract init --non-interactive --harness claude
+```
+
+Uses flags without prompts. If global system doesn't exist, fails with error message.
+
 **Behavior:**
-1. Check if `~/.opencontract/` exists; if not, run `install` first
-2. Create project `.opencontract/config.yaml` pointing to `~/.opencontract/system`
-3. Create project directory structure:
+1. Check if `~/.opencontract/` exists; if not:
+   - Interactive: prompt to run `install` → if yes, run it, then continue
+   - Non-interactive: fail with "Global system not installed. Run 'opencontract install' first."
+2. Check if project already initialized (`.opencontract/config.yaml` exists)
+   - If yes: fail with "Already initialized"
+3. In interactive mode: show prompts and collect harness selection
+4. Create project `.opencontract/config.yaml` pointing to `~/.opencontract/system`
+5. Create project directory structure:
    - `.opencontract/actions/`
    - `.opencontract/contracts/`
    - `opencontract/specs/`
    - `opencontract/artifacts/`
    - `opencontract/artifacts/archive/`
-4. Generate project-level harness adapters to `.claude/`, `.cursor/`, etc.
+6. For each selected harness: generate project-level adapters to `.claude/`, `.cursor/`, etc.
+7. Save selected harnesses to project `.opencontract/config.yaml`
 
 **Changes from v1.0.0:**
+- Interactive prompts for harness selection (can be skipped with `--non-interactive`)
 - No longer copies system tree to `.opencontract/system/`
 - Generates per-Action adapters instead of single entry point
 - Installs adapters at both user and project level
+- Can trigger `install` if global system doesn't exist (interactive mode only)
 
 #### Modified: `opencontract update`
 
@@ -768,27 +873,36 @@ To remove the backup: rm -rf .opencontract/system.backup-*
 
 ### Phase 3: Global install command
 
+**Dependencies:**
+- Add `@clack/prompts` for interactive CLI prompts (checkbox, confirm, spinner)
+
 **Files:**
-- `src/cli/commands/install.ts` — new command
+- `src/cli/commands/install.ts` — new command with interactive prompts
+- `src/cli/prompts.ts` — shared prompt utilities
 - `src/system/install.ts` — installation logic
-- `test/cli/commands/install.test.ts` — command tests
+- `test/cli/commands/install.test.ts` — command tests (mock prompts)
 - `test/integration/global-install.test.ts` — integration test
 
 **Acceptance:**
-- `opencontract install` creates `~/.opencontract/system`
-- Generates user-level adapters
-- Idempotent (second run does nothing unless `--force`)
+- Interactive mode: shows harness checkbox, detects existing harness dirs
+- Non-interactive mode: `--harness` required, no prompts
+- Creates `~/.opencontract/system` and selected adapters
+- Writes `~/.opencontract/config.yaml` with selected harnesses
+- `--force` reinstalls over existing installation
+- Second run without `--force` exits with "Already installed" message
 
 ### Phase 4: Update init command
 
 **Files:**
-- `src/workspace/init.ts` — modify to use global system
-- `test/workspace/init.test.ts` — update tests
+- `src/workspace/init.ts` — modify to add interactive prompts and call `install` if needed
+- `test/workspace/init.test.ts` — update tests (mock prompts)
 
 **Acceptance:**
-- `opencontract init` calls `install` if needed
+- Interactive mode: shows harness checkbox pre-selected from global config
+- Interactive mode: offers to run `install` if global system missing
+- Non-interactive mode: fails if global system missing
 - Creates project config pointing to `~/.opencontract/system`
-- Generates project-level adapters
+- Generates project-level adapters for selected harnesses
 - Does NOT create `.opencontract/system/`
 
 ### Phase 5: Migration logic

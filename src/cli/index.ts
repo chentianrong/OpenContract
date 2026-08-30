@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { join } from 'node:path';
 import { requireWorkspace, resolvePaths } from '../workspace/discovery.js';
 import { DefinitionResolver } from '../definitions/resolver.js';
 import { testContractFixtures } from '../definitions/fixtures.js';
@@ -35,6 +36,13 @@ import { validateActionRun } from '../actions/validate.js';
 import { initWorkspace } from '../workspace/init.js';
 import { runDoctor } from '../system/health.js';
 import { updateSystem } from '../system/update.js';
+import { runInstallCommand } from './commands/install.js';
+import { runUninstallCommand } from './commands/uninstall.js';
+import { isGlobalSystemInstalled, installGlobalSystem, readGlobalHarnesses } from '../system/install.js';
+import { generateAdapters } from '../system/generators.js';
+import { promptConfirm, promptHarnessSelection } from './prompts.js';
+import { runScopedUpdate, resolveUpdateScope } from '../system/update-scoped.js';
+import { discoverWorkspace } from '../workspace/discovery.js';
 import { EXIT_CODES, OpenContractError } from '../domain/errors.js';
 import { reportAndExit } from './process.js';
 
@@ -254,24 +262,88 @@ program
   });
 
 program
+  .command('install')
+  .option('--force', 'overwrite an existing global installation and its adapters')
+  .option('--non-interactive', 'skip all prompts; requires --harness')
+  .option('--harness <names>', 'comma-separated harnesses (codex,claude,cursor)')
+  .description('Install the global system at ~/.opencontract/ and user-level harness adapters')
+  .action(async (options: { force?: boolean; nonInteractive?: boolean; harness?: string }) => {
+    try {
+      const code = await runInstallCommand(options);
+      process.exit(code);
+    } catch (err) {
+      reportAndExit(err);
+    }
+  });
+
+program
   .command('init')
   .option('--harness <names>', 'comma-separated harnesses to generate (codex,claude,cursor)')
+  .option('--non-interactive', 'skip all prompts; fail if global system missing')
   .description('Create an OpenContract workspace in the current directory')
-  .action((options: { harness?: string }) => {
+  .action(async (options: { harness?: string; nonInteractive?: boolean }) => {
     try {
+      // Check for global system first
+      if (!isGlobalSystemInstalled()) {
+        if (options.nonInteractive) {
+          throw new OpenContractError(
+            'GLOBAL_SYSTEM_NOT_INSTALLED',
+            'Global system not installed. Run "opencontract install" first.',
+          );
+        } else {
+          const confirmed = await promptConfirm(
+            'Global system not found. Would you like to install it now?',
+            true,
+          );
+          if (confirmed) {
+            const installCode = await runInstallCommand({ nonInteractive: false });
+            if (installCode !== EXIT_CODES.VALID) {
+              process.stderr.write('Installation failed. Cannot initialize workspace.\n');
+              process.exit(installCode);
+            }
+          } else {
+            process.stderr.write(
+              'Global system required for workspace initialization. Run "opencontract install".\n',
+            );
+            process.exit(EXIT_CODES.CONFIGURATION);
+          }
+        }
+      }
+
       const harnesses = options.harness
         ? options.harness.split(',').map((name) => name.trim()).filter(Boolean)
-        : undefined;
+        : options.nonInteractive
+          ? readGlobalHarnesses() ?? ['codex', 'claude', 'cursor']
+          : await promptHarnessSelection();
 
-      initWorkspace(process.cwd(), harnesses ? { harnesses } : {});
+      // Initialize workspace structure and config
+      initWorkspace(process.cwd(), { harnesses, checkGlobalSystem: false });
 
-      // Install the bundled system tree and generate the selected adapters.
+      // Generate project-level adapters
       const workspace = requireWorkspace(process.cwd());
       const paths = resolvePaths(workspace);
-      const outcome = updateSystem(paths, workspace.config);
+      const systemRoot = paths.system;
+      const selectedHarnesses = workspace.config.harnesses ?? [];
 
-      process.stdout.write(`${renderUpdateHuman(outcome)}\n`);
-      process.exit(outcome.success ? EXIT_CODES.VALID : EXIT_CODES.CONFIGURATION);
+      for (const harness of selectedHarnesses) {
+        const targetRoot = workspace.root;
+        const result = generateAdapters({
+          systemRoot,
+          targetRoot: join(targetRoot, `.${harness}`),
+          harness,
+        });
+
+        if (result.collisions.length > 0) {
+          process.stderr.write(
+            `Warning: adapter collision for ${harness}: ${result.collisions.join(', ')}\n`,
+          );
+        }
+      }
+
+      process.stdout.write(
+        `Workspace initialized at ${workspace.root}\nRun "opencontract doctor" to verify health.\n`,
+      );
+      process.exit(EXIT_CODES.VALID);
     } catch (err) {
       reportAndExit(err);
     }
@@ -280,17 +352,74 @@ program
 program
   .command('update')
   .option('--json', 'emit machine-readable JSON')
-  .description('Install or refresh the system tree and generated harness adapters')
-  .action((options: { json?: boolean }) => {
+  .option('--global', 'update ~/.opencontract/system and user-level adapters')
+  .option('--project', 'regenerate project-level adapters and migrate if needed')
+  .option('--force', 'overwrite adapters that were authored by hand')
+  .description(
+    'Refresh the global system and/or project adapters (defaults to both inside a project, global outside)',
+  )
+  .action((options: { json?: boolean; global?: boolean; project?: boolean; force?: boolean }) => {
     try {
-      const workspace = requireWorkspace(process.cwd());
-      const paths = resolvePaths(workspace);
-      const outcome = updateSystem(paths, workspace.config);
+      const workspace = discoverWorkspace(process.cwd());
+      const result = runScopedUpdate({
+        global: options.global,
+        project: options.project,
+        projectRoot: workspace?.root,
+        force: options.force,
+      });
 
-      process.stdout.write(
-        `${options.json ? renderUpdateJson(outcome) : renderUpdateHuman(outcome)}\n`,
-      );
-      process.exit(outcome.success ? EXIT_CODES.VALID : EXIT_CODES.CONFIGURATION);
+      if (options.json) {
+        process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      } else {
+        const lines: string[] = [];
+        if (result.globalResult) {
+          const g = result.globalResult;
+          lines.push(
+            `Global: ${g.previousVersion ?? 'none'} -> ${g.newVersion}${g.cachedAs ? ` (cached ${g.cachedAs})` : ''}`,
+          );
+          for (const [harness, counts] of Object.entries(g.userAdapters)) {
+            lines.push(`  ${harness}: ${counts.commands} commands, ${counts.skills} skills`);
+          }
+        }
+        if (result.projectResult) {
+          const p = result.projectResult;
+          if (p.migration?.needed) {
+            lines.push('Migrated project to the global system model:');
+            for (const step of p.migration.steps) lines.push(`  ${step}`);
+            if (p.migration.backupPath) {
+              lines.push(`  Remove the backup once verified: rm -rf ${p.migration.backupPath}`);
+            }
+          }
+          for (const [harness, counts] of Object.entries(p.projectAdapters)) {
+            if (counts.commands >= 0) {
+              lines.push(`  ${harness}: ${counts.commands} commands, ${counts.skills} skills`);
+            }
+          }
+        }
+        for (const message of [
+          ...(result.globalResult?.errors ?? []),
+          ...(result.projectResult?.errors ?? []),
+        ]) {
+          lines.push(`Error: ${message}`);
+        }
+        process.stdout.write(`${lines.join('\n')}\n`);
+      }
+
+      process.exit(result.success ? EXIT_CODES.VALID : EXIT_CODES.CONFIGURATION);
+    } catch (err) {
+      reportAndExit(err);
+    }
+  });
+
+program
+  .command('uninstall')
+  .option('--keep-cache', 'preserve ~/.opencontract/cache/')
+  .option('--non-interactive', 'skip the confirmation prompt')
+  .description('Remove the global system, global config, and user-level harness adapters')
+  .action(async (options: { keepCache?: boolean; nonInteractive?: boolean }) => {
+    try {
+      const code = await runUninstallCommand(options);
+      process.exit(code);
     } catch (err) {
       reportAndExit(err);
     }

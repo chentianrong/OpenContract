@@ -9,4 +9,8 @@ inputs: []
 
 ## Tasks
 
-Content under Tasks.
+- [ ] Update contract.md rules for all 12 Contracts
+- [ ] Add status field to decision and archive-report templates
+- [ ] Expand valid fixtures to meet new minimumContent thresholds
+- [ ] Write semantic validators for tasks, review-report, verification-report, execution-report
+- [ ] Run full test suite and verify fixture conformance

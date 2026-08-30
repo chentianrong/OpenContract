@@ -25,7 +25,7 @@ describe('Validation pipeline', () => {
 
   beforeEach(() => {
     workspace = mkdtempSync(join(tmpdir(), 'opencontract-pipeline-'));
-    initWorkspace(workspace, { harnesses: [] });
+    initWorkspace(workspace, { harnesses: [], localSystem: true });
     cpSync(bundledSystemRoot(), join(workspace, '.opencontract', 'system'), { recursive: true });
 
     const discovered = requireWorkspace(workspace);

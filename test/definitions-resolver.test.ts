@@ -13,7 +13,7 @@ describe('Definition resolver', () => {
 
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'opencontract-test-'));
-    initWorkspace(tempDir, { harnesses: [] });
+    initWorkspace(tempDir, { harnesses: [], localSystem: true });
     const workspace = requireWorkspace(tempDir);
     const paths = resolvePaths(workspace);
     resolver = new DefinitionResolver(paths, workspace.config);

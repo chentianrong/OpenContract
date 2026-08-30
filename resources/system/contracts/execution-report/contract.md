@@ -13,11 +13,17 @@ rules:
     - name: Completed
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 15
+      maxOccurrences: 1
     - name: Verified
       level: 2
       required: true
-      minimumContent: 1
+      minimumContent: 10
+      maxOccurrences: 1
+    - name: Skipped
+      level: 2
+      required: false
+      minimumContent: 10
 ---
 
 # Execution Report Contract

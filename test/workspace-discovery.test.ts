@@ -124,13 +124,14 @@ describe('Path resolution and safety', () => {
 
   it('rejects absolute paths in configuration', () => {
     mkdirSync(join(tempDir, '.opencontract'), { recursive: true });
+    // System paths use validateSystemPath, which checks home directory first
     writeFileSync(join(tempDir, '.opencontract', 'config.yaml'), 'system: /absolute/path\n');
     const workspace = requireWorkspace(tempDir);
     expect(() => resolvePaths(workspace)).toThrow(OpenContractError);
     try {
       resolvePaths(workspace);
     } catch (err) {
-      expect((err as OpenContractError).code).toBe('PATH_NOT_RELATIVE');
+      expect((err as OpenContractError).code).toBe('PATH_OUTSIDE_HOME');
     }
   });
 
@@ -167,6 +168,74 @@ describe('Path resolution and safety', () => {
       resolvePaths(workspace);
     } catch (err) {
       expect((err as OpenContractError).code).toBe('PATH_SYMLINK_ESCAPE');
+    }
+  });
+
+  it('accepts absolute system paths under user home with ~/', () => {
+    mkdirSync(join(tempDir, '.opencontract'), { recursive: true });
+    writeFileSync(
+      join(tempDir, '.opencontract', 'config.yaml'),
+      'system: ~/.opencontract/system\n',
+    );
+    const workspace = requireWorkspace(tempDir);
+    const paths = resolvePaths(workspace);
+
+    expect(paths.system).toContain('.opencontract/system');
+    expect(paths.system).toMatch(/^\/.*\.opencontract\/system$/);
+  });
+
+  it('accepts relative system paths as before', () => {
+    mkdirSync(join(tempDir, '.opencontract'), { recursive: true });
+    writeFileSync(
+      join(tempDir, '.opencontract', 'config.yaml'),
+      'system: .opencontract/system\n',
+    );
+    const workspace = requireWorkspace(tempDir);
+    const paths = resolvePaths(workspace);
+
+    expect(paths.system).toBe(join(tempDir, '.opencontract', 'system'));
+  });
+
+  it('rejects absolute system paths outside user home', () => {
+    mkdirSync(join(tempDir, '.opencontract'), { recursive: true });
+    writeFileSync(
+      join(tempDir, '.opencontract', 'config.yaml'),
+      'system: /etc/opencontract/system\n',
+    );
+    const workspace = requireWorkspace(tempDir);
+    expect(() => resolvePaths(workspace)).toThrow(OpenContractError);
+    try {
+      resolvePaths(workspace);
+    } catch (err) {
+      expect((err as OpenContractError).code).toBe('PATH_OUTSIDE_HOME');
+    }
+  });
+
+  it('validates trust.validatorRoots with system path rules', () => {
+    mkdirSync(join(tempDir, '.opencontract'), { recursive: true });
+    writeFileSync(
+      join(tempDir, '.opencontract', 'config.yaml'),
+      'system: .opencontract/system\ntrust:\n  validatorRoots:\n    - ~/.opencontract/system\n',
+    );
+    const workspace = requireWorkspace(tempDir);
+    const paths = resolvePaths(workspace);
+
+    expect(paths.trustedValidatorRoots).toHaveLength(1);
+    expect(paths.trustedValidatorRoots[0]).toContain('.opencontract/system');
+  });
+
+  it('rejects workspace paths with absolute values', () => {
+    mkdirSync(join(tempDir, '.opencontract'), { recursive: true });
+    writeFileSync(
+      join(tempDir, '.opencontract', 'config.yaml'),
+      'system: .opencontract/system\nspecs: /tmp/specs\n',
+    );
+    const workspace = requireWorkspace(tempDir);
+    expect(() => resolvePaths(workspace)).toThrow(OpenContractError);
+    try {
+      resolvePaths(workspace);
+    } catch (err) {
+      expect((err as OpenContractError).code).toBe('PATH_NOT_RELATIVE');
     }
   });
 });

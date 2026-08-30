@@ -19,7 +19,7 @@ describe('Definition query service', () => {
 
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'opencontract-query-'));
-    initWorkspace(tempDir, { harnesses: [] });
+    initWorkspace(tempDir, { harnesses: [], localSystem: true });
     // Install the bundled system tree the way `init`/`update` will.
     cpSync(bundledSystemRoot(), join(tempDir, '.opencontract', 'system'), { recursive: true });
 

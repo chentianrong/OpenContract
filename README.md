@@ -24,6 +24,35 @@ npm install -g @opencontract/cli
 npx @opencontract/cli --help
 ```
 
+### 安装全局系统
+
+系统定义（Actions 与 Contracts）只安装一次，安装在 `~/.opencontract/`，供所有项目共享：
+
+```bash
+opencontract install
+```
+
+交互模式会检测 `~/` 下已有的 harness 目录并预选。CI 或自动化场景使用非交互模式：
+
+```bash
+opencontract install --non-interactive --harness claude,cursor
+```
+
+这会创建：
+
+```
+~/.opencontract/
+├── system/             # 系统 Actions 和 Contracts（所有项目共享）
+├── cache/              # 精确版本缓存
+└── config.yaml         # 全局默认 harness 选择
+
+~/.claude/
+├── commands/oc/        # 用户级斜杠命令（/oc:explore 等）
+└── skills/oc-*/        # 用户级 Skill（oc-explore 等）
+```
+
+用户级适配器对所有项目生效，无需逐项目初始化即可使用 `/oc:*` 命令。
+
 ### 初始化工作区
 
 ```bash
@@ -31,12 +60,11 @@ cd your-project
 opencontract init --harness claude
 ```
 
-这会创建工作区结构并安装系统定义：
+若全局系统尚未安装，交互模式会询问是否立即安装。这会创建工作区结构：
 
 ```
 .opencontract/          # OpenContract 工作区
-├── config.yaml         # 配置文件
-├── system/             # 系统 Actions 和 Contracts（13 + 14）
+├── config.yaml         # 配置文件（system 指向 ~/.opencontract/system）
 ├── actions/            # 项目自定义 Actions
 └── contracts/          # 项目自定义 Contracts
 
@@ -45,8 +73,38 @@ opencontract/           # 受管理的工作产物
 └── artifacts/          # Artifact 和 ActionRuns
     └── archive/        # 已归档任务
 
-.claude/skills/opencontract/  # 生成的 Harness 适配器
+.claude/
+├── commands/oc/        # 项目级斜杠命令
+└── skills/oc-*/        # 项目级 Skill
 ```
+
+项目**不再**复制系统树——`config.yaml` 中的 `system: ~/.opencontract/system` 引用全局安装。
+
+### 用户级与项目级适配器
+
+适配器安装在两个位置，项目级优先：
+
+| 位置 | 路径 | 用途 |
+|---|---|---|
+| 用户级 | `~/.claude/commands/oc/` | 跨项目默认能力 |
+| 项目级 | `<project>/.claude/commands/oc/` | 按项目定制或覆盖 |
+
+同一路径同时存在时，harness 使用项目级适配器。两者内容默认相同，项目级允许单独修改而不影响其他项目。
+
+生成的适配器带 `<!-- opencontract:generated -->` 标记。目标路径存在无标记文件时视为冲突：该 harness 一个文件都不写，并报告冲突路径——避免出现半装状态。`--force` 可覆盖。
+
+### 更新与卸载
+
+```bash
+opencontract update            # 项目内：更新全局系统 + 重新生成项目适配器
+opencontract update --global   # 仅全局系统与用户级适配器
+opencontract update --project  # 仅项目级适配器（含 v1.0 自动迁移）
+
+opencontract uninstall               # 移除 ~/.opencontract/ 与用户级适配器
+opencontract uninstall --keep-cache  # 保留缓存
+```
+
+v1.0 项目在首次 `opencontract update` 时自动迁移到全局模型，旧系统树备份到 `.opencontract/system.backup-<timestamp>`。详见 [docs/migration-v1.1.md](docs/migration-v1.1.md)。
 
 ### 验证 Artifact
 
@@ -234,13 +292,29 @@ opencontract init [--harness <names>]
 
 初始化工作区。`--harness` 接受逗号分隔的 harness 名称：`codex`、`claude`、`cursor`。
 
+### `install`
+
+```bash
+opencontract install [--force] [--non-interactive] [--harness <names>]
+```
+
+安装全局系统到 `~/.opencontract/` 并生成用户级 harness 适配器。交互模式检测已有 harness 目录并预选；非交互模式需显式指定 `--harness`。
+
 ### `update`
 
 ```bash
-opencontract update [--json]
+opencontract update [--json] [--global] [--project] [--force]
 ```
 
-安装或刷新系统树和 harness 适配器。幂等操作，可安全重复运行。
+更新系统定义和适配器。在项目内默认两者都更新；外部仅更新全局部分。`--global`/`--project` 独立控制。v1.0 项目自动迁移到全局模型。
+
+### `uninstall`
+
+```bash
+opencontract uninstall [--keep-cache] [--non-interactive]
+```
+
+移除 `~/.opencontract/` 和用户级适配器。`--keep-cache` 保留缓存历史。
 
 ### `doctor`
 
@@ -311,11 +385,11 @@ opencontract contract test <name> --version <version> [--json]
 `.opencontract/config.yaml` 示例：
 
 ```yaml
-# 系统定义树（由 opencontract update 管理）
-system: .opencontract/system
+# 系统定义树（全局共享，由 opencontract install/update 管理）
+system: ~/.opencontract/system
 
-# 缓存的精确版本定义
-cache: .opencontract/cache
+# 缓存的精确版本定义（全局共享）
+cache: ~/.opencontract/cache
 
 # 项目自定义 Actions 和 Contracts
 projectActions: .opencontract/actions
@@ -332,7 +406,7 @@ registries: []
 # 信任配置：允许运行 validator 的根目录
 trust:
   validatorRoots:
-    - .opencontract/system
+    - ~/.opencontract/system
 
 # Validator 子进程配置
 validator:
@@ -523,16 +597,18 @@ outputs:
 
 ### Validator 信任根
 
-OpenContract 只运行位于 `trust.validatorRoots` 配置路径下的 validator。默认信任 `.opencontract/system`（系统捆绑）。
+OpenContract 只运行位于 `trust.validatorRoots` 配置路径下的 validator。默认信任 `~/.opencontract/system`（全局系统捆绑）。
 
 要信任项目自定义 validators：
 
 ```yaml
 trust:
   validatorRoots:
-    - .opencontract/system
+    - ~/.opencontract/system
     - .opencontract/contracts
 ```
+
+系统路径（`system`、`cache`、`trust.validatorRoots`）可以是绝对路径，但必须解析到用户主目录之下——主目录之外的绝对路径会以 `PATH_OUTSIDE_HOME` 拒绝。项目路径（`specs`、`artifacts` 等）仍须是相对路径且不得越出工作区。
 
 未信任的 validator 不会运行，校验阶段跳过并报告 `VALIDATOR_UNTRUSTED`。
 

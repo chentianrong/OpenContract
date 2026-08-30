@@ -9,6 +9,11 @@ rules:
   frontmatterSchema:
     type: object
     required: [contract, version, action, action_version, created_at, inputs]
+  sections:
+    - name: Observation
+      level: 2
+      required: false
+      minimumContent: 10
 ---
 
 # Note Contract

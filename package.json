@@ -1,10 +1,10 @@
 {
   "name": "@opencontract/cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Markdown-first contract system and CLI for agent-driven work",
   "type": "module",
   "bin": {
-    "opencontract": "dist/cli/index.js"
+    "opencontract": "./dist/cli/index.js"
   },
   "exports": {
     ".": {
@@ -53,6 +53,7 @@
     "vitest": "^2.0.0"
   },
   "dependencies": {
+    "@clack/prompts": "0.7.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "commander": "^15.0.0",

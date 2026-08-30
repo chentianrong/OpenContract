@@ -9,8 +9,10 @@ inputs: []
 
 ## Completed
 
-Content under Completed.
+All five tasks from the list completed: contract rules updated, templates revised,
+valid fixtures expanded, semantic validators written, tests passing.
 
 ## Verified
 
-Content under Verified.
+Ran `pnpm test:run` — all Contract fixture tests pass. Ran `pnpm type-check` — no
+errors. Manually validated each validator protocol response.

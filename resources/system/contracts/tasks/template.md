@@ -8,3 +8,8 @@ inputs: []
 ---
 
 ## Tasks
+
+<!-- Write each task as a checkbox item:
+- [ ] First task description
+- [ ] Second task description
+-->

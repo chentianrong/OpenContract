@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
+import { homedir } from 'node:os';
 import { parse as parseYaml } from 'yaml';
 import { OpenContractError } from '../domain/errors.js';
 import type { WorkspaceConfig, WorkspaceRoot, ResolvedPaths } from '../domain/types.js';
@@ -218,8 +219,8 @@ export function resolvePaths(workspace: WorkspaceRoot): ResolvedPaths {
   return {
     root,
     configPath: workspace.configPath,
-    system: validateRelative(root, config.system!, 'system'),
-    cache: validateRelative(root, config.cache!, 'cache'),
+    system: validateSystemPath(root, config.system!, 'system'),
+    cache: validateSystemPath(root, config.cache!, 'cache'),
     projectActions: validateRelative(root, config.projectActions!, 'projectActions'),
     projectContracts: validateRelative(root, config.projectContracts!, 'projectContracts'),
     specs: validateRelative(root, config.specs!, 'specs'),
@@ -229,9 +230,75 @@ export function resolvePaths(workspace: WorkspaceRoot): ResolvedPaths {
       validateRelative(root, reg, `registries[${i}]`),
     ),
     trustedValidatorRoots: config.trust!.validatorRoots!.map((vr, i) =>
-      validateRelative(root, vr, `trust.validatorRoots[${i}]`),
+      validateSystemPath(root, vr, `trust.validatorRoots[${i}]`),
     ),
   };
+}
+
+/**
+ * Validate system paths (system, cache, trust.validatorRoots[]).
+ * System paths may be absolute and must resolve under ~/.
+ * Relative paths are resolved against workspace root and must not escape it.
+ */
+function validateSystemPath(workspaceRoot: string, configuredPath: string, label: string): string {
+  let resolved: string;
+
+  // Expand ~/ prefix
+  let expandedPath = configuredPath;
+  if (configuredPath.startsWith('~/')) {
+    expandedPath = join(homedir(), configuredPath.slice(2));
+  } else if (configuredPath === '~') {
+    expandedPath = homedir();
+  }
+
+  if (isAbsolute(expandedPath)) {
+    // Absolute system paths must be under user home directory
+    const homeRoot = homedir();
+    resolved = resolve(expandedPath);
+
+    if (!isUnderRoot(homeRoot, resolved)) {
+      throw new OpenContractError(
+        'PATH_OUTSIDE_HOME',
+        `${label} must resolve under the user home directory.`,
+        {
+          path: configuredPath,
+          detail: `resolved: ${resolved}, home: ${homeRoot}`,
+        },
+      );
+    }
+
+    // Check symlink resolution for absolute paths
+    let realResolved: string;
+    try {
+      if (existsSync(resolved)) {
+        realResolved = realpathSync(resolved);
+      } else {
+        realResolved = realpathOfNearestAncestor(resolved);
+      }
+    } catch (cause) {
+      throw new OpenContractError('PATH_OUTSIDE_HOME', `Cannot resolve ${label} symlinks.`, {
+        path: resolved,
+        detail: label,
+        cause,
+      });
+    }
+
+    if (!isUnderRoot(homeRoot, realResolved)) {
+      throw new OpenContractError(
+        'PATH_SYMLINK_ESCAPE',
+        `${label} resolves through a symlink outside the user home directory.`,
+        {
+          path: resolved,
+          detail: `real: ${realResolved}`,
+        },
+      );
+    }
+
+    return resolved;
+  } else {
+    // Relative system paths follow workspace validation
+    return validateRelative(workspaceRoot, expandedPath, label);
+  }
 }
 
 function validateRelative(workspaceRoot: string, configuredPath: string, label: string): string {
