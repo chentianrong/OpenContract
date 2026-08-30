@@ -50,7 +50,7 @@ const program = new Command();
 
 program
   .name('opencontract')
-  .version('1.0.1', '-V, --cli-version', 'display CLI version')
+  .version('1.0.2', '-V, --cli-version', 'display CLI version')
   .description('Markdown-first contract system for agent-driven work');
 
 const action = program

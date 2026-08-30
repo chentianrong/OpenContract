@@ -1,6 +1,6 @@
 {
   "name": "@opencontract/cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Markdown-first contract system and CLI for agent-driven work",
   "type": "module",
   "bin": {

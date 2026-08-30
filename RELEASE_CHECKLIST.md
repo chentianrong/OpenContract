@@ -1,4 +1,4 @@
-# Release Checklist for @opencontract/cli v1.0.0
+# Release Checklist for @opencontract/cli v1.0.2
 
 执行以下步骤验证发布就绪性：
 
@@ -41,11 +41,11 @@ pnpm validate:skills
 
 ```bash
 pnpm pack --pack-destination /tmp
-tar -tzf /tmp/opencontract-cli-1.0.0.tgz | wc -l
-tar -tzf /tmp/opencontract-cli-1.0.0.tgz | grep -c "resources/system/actions/.*SKILL.md$"
-tar -tzf /tmp/opencontract-cli-1.0.0.tgz | grep -c "resources/system/contracts/.*/contract.md$"
-tar -tzf /tmp/opencontract-cli-1.0.0.tgz | grep "resources/system/manifest.yaml"
-tar -tzf /tmp/opencontract-cli-1.0.0.tgz | grep "README.md"
+tar -tzf /tmp/opencontract-cli-1.0.2.tgz | wc -l
+tar -tzf /tmp/opencontract-cli-1.0.2.tgz | grep -c "resources/system/actions/.*SKILL.md$"
+tar -tzf /tmp/opencontract-cli-1.0.2.tgz | grep -c "resources/system/contracts/.*/contract.md$"
+tar -tzf /tmp/opencontract-cli-1.0.2.tgz | grep "resources/system/manifest.yaml"
+tar -tzf /tmp/opencontract-cli-1.0.2.tgz | grep "README.md"
 ```
 
 **验证点**：
@@ -67,7 +67,7 @@ node dist/cli/index.js validate --help
 **验证点**：
 - [ ] 所有命令显示帮助信息
 - [ ] 无启动错误或警告
-- [ ] 版本号显示为 `1.0.0`
+- [ ] 版本号显示为 `1.0.2`
 
 ## 6. 库 API 导出验证
 
@@ -138,7 +138,7 @@ node -e "const p = require('./package.json'); console.log(p.name, p.version, p.e
 
 **验证点**：
 - [ ] name: `@opencontract/cli`
-- [ ] version: `1.0.0`
+- [ ] version: `1.0.2`
 - [ ] engines.node: `>=22.0.0`
 - [ ] bin.opencontract: `./dist/cli/index.js`
 - [ ] exports['.'].import: `./dist/index.js`
@@ -180,8 +180,8 @@ git status
 ## 14. 版本标签
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.2
+git push origin v1.0.2
 ```
 
 **验证点**：
@@ -199,14 +199,14 @@ npm publish --access public
 **验证点**：
 - [ ] `--dry-run` 显示正确的文件列表
 - [ ] 无发布错误
-- [ ] npm 注册表显示 `@opencontract/cli@1.0.0`
+- [ ] npm 注册表显示 `@opencontract/cli@1.0.2`
 - [ ] 包含所有必要文件（dist、resources、README）
 
 ## 发布后验证
 
 ```bash
-npm view @opencontract/cli@1.0.0
-npx @opencontract/cli@1.0.0 --help
+npm view @opencontract/cli@1.0.2
+npx @opencontract/cli@1.0.2 --help
 ```
 
 **验证点**：
@@ -222,4 +222,4 @@ npx @opencontract/cli@1.0.0 --help
 
 **npm 包 URL**: https://www.npmjs.com/package/@opencontract/cli
 
-**Git 标签**: https://github.com/opencontract/opencontract/releases/tag/v1.0.0
+**Git 标签**: https://github.com/opencontract/opencontract/releases/tag/v1.0.2
