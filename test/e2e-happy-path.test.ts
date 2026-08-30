@@ -36,27 +36,50 @@ function runCli(cwd: string, args: string[]): RunResult {
 
 describe('End-to-end happy path', () => {
   let workspace: string;
+  let tempHome: string;
+  let originalHome: string | undefined;
 
   beforeEach(() => {
     workspace = mkdtempSync(join(tmpdir(), 'opencontract-e2e-'));
+    tempHome = mkdtempSync(join(tmpdir(), 'opencontract-e2e-home-'));
+
+    // Isolate HOME for global system check
+    originalHome = process.env.HOME;
+    process.env.HOME = tempHome;
+
+    // Pre-install global system so init doesn't require interaction
+    const installResult = runCli(tempHome, ['install', '--harness', 'claude', '--non-interactive']);
+    if (installResult.status !== 0) {
+      throw new Error(`Global system install failed: ${installResult.stderr}`);
+    }
   });
 
   afterEach(() => {
     rmSync(workspace, { recursive: true, force: true });
+    rmSync(tempHome, { recursive: true, force: true });
+
+    if (originalHome !== undefined) {
+      process.env.HOME = originalHome;
+    } else {
+      delete process.env.HOME;
+    }
   });
 
   it('completes the full lifecycle from init to validated ActionRun', () => {
     // --- Step 1: Initialize workspace ---
     const initResult = runCli(workspace, ['init', '--harness', 'claude']);
     expect(initResult.status).toBe(0);
-    expect(initResult.stdout).toContain('installed');
+    expect(initResult.stdout).toContain('initialized');
 
-    // Verify initialization created the expected structure
+    // Verify initialization created the expected structure. Under the global
+    // system model the system tree lives at ~/.opencontract/system, not inside
+    // the project, so the project carries only config and its own extensions.
     expect(existsSync(join(workspace, '.opencontract', 'config.yaml'))).toBe(true);
-    expect(existsSync(join(workspace, '.opencontract', 'system', 'manifest.yaml'))).toBe(true);
+    expect(existsSync(join(tempHome, '.opencontract', 'system', 'manifest.yaml'))).toBe(true);
     expect(existsSync(join(workspace, 'opencontract', 'specs'))).toBe(true);
     expect(existsSync(join(workspace, 'opencontract', 'artifacts', 'archive'))).toBe(true);
-    expect(existsSync(join(workspace, '.claude', 'skills', 'opencontract', 'SKILL.md'))).toBe(
+    // Adapters generate per-Action skills (oc-explore, oc-plan, etc.), not a single 'opencontract' entry
+    expect(existsSync(join(workspace, '.claude', 'skills', 'oc-explore', 'SKILL.md'))).toBe(
       true,
     );
 
@@ -126,6 +149,7 @@ action: explore
 action_version: v1.0.0
 created_at: "2026-08-28T10:06:00Z"
 inputs: ["note.md"]
+status: pending
 ---
 
 ## Question
@@ -160,10 +184,6 @@ mobile client lands. This Decision is still pending human authorization.
 
     // --- Step 5: Validate directory ---
     const dirValidateResult = runCli(workspace, ['validate', runDir, '--json']);
-    if (dirValidateResult.status !== 0) {
-      console.log('Directory validation failed:', dirValidateResult.stdout);
-      console.log('stderr:', dirValidateResult.stderr);
-    }
     expect(dirValidateResult.status).toBe(0);
     const dirResult = JSON.parse(dirValidateResult.stdout);
     expect(dirResult.target.type).toBe('directory');

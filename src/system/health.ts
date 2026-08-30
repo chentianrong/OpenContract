@@ -191,8 +191,7 @@ function checkAdapters(paths: ResolvedPaths, config: WorkspaceConfig): DoctorChe
 
   const checks: DoctorCheck[] = [];
   for (const harness of selected) {
-    const adapter = adapterFor(harness);
-    if (!adapter) {
+    if (!SUPPORTED_HARNESSES.find((a) => a.name === harness)) {
       checks.push(
         bad(
           'adapters',
@@ -205,20 +204,55 @@ function checkAdapters(paths: ResolvedPaths, config: WorkspaceConfig): DoctorChe
       continue;
     }
 
-    const target = join(paths.root, adapter.relativePath);
-    if (!existsSync(target)) {
+    // Check both the legacy single-entry adapter and the current per-Action model.
+    const legacyAdapter = adapterFor(harness);
+    const legacyPath = legacyAdapter ? join(paths.root, legacyAdapter.relativePath) : null;
+    const legacyExists = legacyPath && existsSync(legacyPath);
+
+    // Per-Action skills under .<harness>/skills/oc-<action>/
+    const skillsDir = join(paths.root, `.${harness}`, 'skills');
+    const perActionSkills = existsSync(skillsDir)
+      ? readdirSync(skillsDir, { withFileTypes: true })
+          .filter((entry) => entry.isDirectory() && entry.name.startsWith('oc-'))
+          .map((entry) => join(skillsDir, entry.name, 'SKILL.md'))
+          .filter((path) => existsSync(path))
+      : [];
+
+    // Accept either model as present
+    if (!legacyExists && perActionSkills.length === 0) {
       checks.push(bad('adapters', `The ${harness} adapter is not installed.`, 'ADAPTER_MISSING'));
-    } else if (!isGenerated(target)) {
-      // An unmarked file is user-authored; update will not touch it.
-      checks.push(
-        bad(
-          'adapters',
-          `${adapter.relativePath} exists but is not OpenContract-owned.`,
-          'ADAPTER_CONFLICT',
-        ),
-      );
+      continue;
+    }
+
+    // If legacy exists, verify it's owned; if per-action exist, verify at least one is owned
+    if (legacyExists) {
+      if (!isGenerated(legacyPath!)) {
+        checks.push(
+          bad(
+            'adapters',
+            `${legacyAdapter!.relativePath} exists but is not OpenContract-owned.`,
+            'ADAPTER_CONFLICT',
+          ),
+        );
+      } else {
+        checks.push(ok('adapters', `The ${harness} adapter is installed and OpenContract-owned.`));
+      }
     } else {
-      checks.push(ok('adapters', `The ${harness} adapter is installed and OpenContract-owned.`));
+      // Per-action model
+      const owned = perActionSkills.filter((path) => isGenerated(path));
+      if (owned.length === 0) {
+        checks.push(
+          bad(
+            'adapters',
+            `${harness} skills exist but none are OpenContract-owned.`,
+            'ADAPTER_CONFLICT',
+          ),
+        );
+      } else {
+        checks.push(
+          ok('adapters', `The ${harness} adapter is installed (${perActionSkills.length} skill(s)).`),
+        );
+      }
     }
   }
 

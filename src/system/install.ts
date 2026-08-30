@@ -36,7 +36,7 @@ export interface InstallResult {
 
 /**
  * Install OpenContract global system to ~/.opencontract/.
- * Creates system/, cache/, and global-config.yaml with selected harnesses.
+ * Creates system/, cache/, and config.yaml with selected harnesses.
  * Generates user-level adapters at ~/.{harness}/ for each selected harness.
  */
 export function installGlobalSystem(options: InstallOptions): InstallResult {
@@ -44,7 +44,7 @@ export function installGlobalSystem(options: InstallOptions): InstallResult {
   const globalRoot = join(home, '.opencontract');
   const systemRoot = join(globalRoot, 'system');
   const cacheRoot = join(globalRoot, 'cache');
-  const configPath = join(globalRoot, 'global-config.yaml');
+  const configPath = join(globalRoot, 'config.yaml');
   const errors: string[] = [];
   const userAdapters: Record<string, { commands: number; skills: number }> = {};
 
@@ -153,7 +153,7 @@ export function isGlobalSystemInstalled(home?: string): boolean {
  */
 export function readGlobalHarnesses(home?: string): string[] | undefined {
   const root = home ?? homedir();
-  const configPath = join(root, '.opencontract', 'global-config.yaml');
+  const configPath = join(root, '.opencontract', 'config.yaml');
   if (!existsSync(configPath)) return undefined;
 
   try {

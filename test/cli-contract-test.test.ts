@@ -145,7 +145,7 @@ inputs: []
 
 ## Observation
 
-Content.
+This is sufficient content to meet the minimumContent requirement of 10 characters.
 `,
       'utf-8',
     );

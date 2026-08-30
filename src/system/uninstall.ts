@@ -20,7 +20,7 @@ export function uninstallGlobalSystem(options: UninstallOptions = {}): Uninstall
   const home = options.home ?? homedir();
   const globalRoot = join(home, '.opencontract');
   const systemRoot = join(globalRoot, 'system');
-  const configPath = join(globalRoot, 'global-config.yaml');
+  const configPath = join(globalRoot, 'config.yaml');
   const cacheRoot = join(globalRoot, 'cache');
 
   const removed: string[] = [];
